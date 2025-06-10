@@ -50,31 +50,56 @@ jobs:
         run: |
           keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
 
-      - name: 创建签名配置
+      - name: 创建修改后的app/build.gradle文件
         run: |
-          echo "storeFile=../debug.keystore" > app/signing.properties
-          echo "storePassword=android" >> app/signing.properties
-          echo "keyAlias=androiddebugkey" >> app/signing.properties
-          echo "keyPassword=android" >> app/signing.properties
+          cat > app/build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application'
+          }
 
-      - name: 更新app/build.gradle添加签名配置
-        run: |
-          sed -i '/defaultConfig {/i \
-          signingConfigs {\
-              release {\
-                  def signingProps = new Properties()\
-                  def signingFile = file("signing.properties")\
-                  if (signingFile.exists()) {\
-                      signingProps.load(new FileInputStream(signingFile))\
-                      storeFile file(signingProps["storeFile"])\
-                      storePassword signingProps["storePassword"]\
-                      keyAlias signingProps["keyAlias"]\
-                      keyPassword signingProps["keyPassword"]\
-                  }\
-              }\
-          }' app/build.gradle
-          
-          sed -i 's/release {/release {\n            signingConfig signingConfigs.release/' app/build.gradle
+          android {
+              compileSdkVersion 33
+              
+              signingConfigs {
+                  release {
+                      storeFile file("../debug.keystore")
+                      storePassword "android"
+                      keyAlias "androiddebugkey"
+                      keyPassword "android"
+                  }
+              }
+              
+              defaultConfig {
+                  applicationId "com.example.autoexit"
+                  minSdkVersion 21
+                  targetSdkVersion 33
+                  versionCode 1
+                  versionName "1.0"
+              }
+              
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                      minifyEnabled false
+                      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+                  }
+                  debug {
+                      signingConfig signingConfigs.release
+                  }
+              }
+              
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }
+          }
+
+          dependencies {
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+              implementation 'com.google.android.material:material:1.9.0'
+              implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+          }
+          EOF
 
       - name: 创建资源目录
         run: |
@@ -83,6 +108,153 @@ jobs:
           mkdir -p app/src/main/res/mipmap-xhdpi
           mkdir -p app/src/main/res/mipmap-xxhdpi
           mkdir -p app/src/main/res/mipmap-xxxhdpi
+          mkdir -p app/src/main/res/values
+
+      - name: 创建基本资源文件
+        run: |
+          # 创建styles.xml
+          cat > app/src/main/res/values/styles.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+                  <item name="colorPrimary">#3F51B5</item>
+                  <item name="colorPrimaryDark">#303F9F</item>
+                  <item name="colorAccent">#FF4081</item>
+              </style>
+          </resources>
+          EOF
+          
+          # 创建colors.xml
+          cat > app/src/main/res/values/colors.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="purple_200">#FFBB86FC</color>
+              <color name="purple_500">#FF6200EE</color>
+              <color name="purple_700">#FF3700B3</color>
+              <color name="teal_200">#FF03DAC5</color>
+              <color name="teal_700">#FF018786</color>
+              <color name="black">#FF000000</color>
+              <color name="white">#FFFFFFFF</color>
+              <color name="ic_launcher_background">#3DDC84</color>
+              <color name="ic_launcher_foreground">#FFFFFF</color>
+          </resources>
+          EOF
+          
+          # 创建简单的图标文件
+          cat > app/src/main/res/mipmap-hdpi/ic_launcher.png << 'EOF'
+          iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABZ0lEQVR4nO2XQU7CUBSG/9OXGBcuXcCGjRtjTNyYuHUBCxJX4A4WJG5cwsqVJm5csIQNJLoB4wZK0+K1pUB7O4XSmeRLbm7P7fmn59zepwDFYvGJ5CnJK/zdteR1qVRaMfOEAZKsALiTVP7jcU15nhcBQNIRgEP9T7XrumMASA1gMwI4M7PZusPSRj8zm0laR2Bm5jXzlmVtDMDDpgEKgAKgACgACoAC8BcAJA8AzCQV1q1D8lnSa97Ewfvu/XwLwHHaeDKZAJgBmJMsrgHQ8zzvenGebQGQ/Cpl2fO84XK8BUDSXdro+/4QQFfSTNJwdV4eANNVhWEYTiWdk+wyTyT7QRC8ZdVYeQJJHQBRFEXcI+m6bjtLNPMEYRi2JI0lxXEcd0g2syTzbuGpql5F0bnv+49ZxWRdxxebDlAAFAAFQAFQABSAXQEMdrD34N8Akm4kfewgwI/nebeq1WpRCPEJXtNVvkbvZrIAAAAASUVORK5CYII=
+          EOF
+          
+          cp app/src/main/res/mipmap-hdpi/ic_launcher.png app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+          
+          # 复制到其他尺寸目录
+          cp app/src/main/res/mipmap-hdpi/ic_launcher.png app/src/main/res/mipmap-mdpi/ic_launcher.png
+          cp app/src/main/res/mipmap-hdpi/ic_launcher.png app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          cp app/src/main/res/mipmap-hdpi/ic_launcher.png app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          cp app/src/main/res/mipmap-hdpi/ic_launcher.png app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          
+          cp app/src/main/res/mipmap-hdpi/ic_launcher_round.png app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+          cp app/src/main/res/mipmap-hdpi/ic_launcher_round.png app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+          cp app/src/main/res/mipmap-hdpi/ic_launcher_round.png app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+          cp app/src/main/res/mipmap-hdpi/ic_launcher_round.png app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+          
+          # 创建strings.xml
+          cat > app/src/main/res/values/strings.xml << 'EOF'
+          <resources>
+              <string name="app_name">自动退出应用</string>
+          </resources>
+          EOF
+
+      - name: 创建Java源文件目录
+        run: mkdir -p app/src/main/java/com/example/autoexit
+
+      - name: 创建AndroidManifest.xml
+        run: |
+          cat > app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.example.autoexit">
+
+              <application
+                  android:allowBackup="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:label="@string/app_name"
+                  android:roundIcon="@mipmap/ic_launcher_round"
+                  android:supportsRtl="true"
+                  android:theme="@style/AppTheme">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+
+          </manifest>
+          EOF
+
+      - name: 创建MainActivity.java
+        run: |
+          cat > app/src/main/java/com/example/autoexit/MainActivity.java << 'EOF'
+          package com.example.autoexit;
+
+          import android.os.Bundle;
+          import android.os.Handler;
+          import android.widget.Toast;
+          import androidx.appcompat.app.AppCompatActivity;
+
+          public class MainActivity extends AppCompatActivity {
+
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  setContentView(R.layout.activity_main);
+                  
+                  // 显示一个简短的提示
+                  Toast.makeText(this, "应用正在退出...", Toast.LENGTH_SHORT).show();
+                  
+                  // 延迟500毫秒后退出应用，以便Toast能够显示
+                  new Handler().postDelayed(new Runnable() {
+                      @Override
+                      public void run() {
+                          // 结束当前活动
+                          finish();
+                          
+                          // 确保应用完全退出，不留后台进程
+                          android.os.Process.killProcess(android.os.Process.myPid());
+                          System.exit(0);
+                      }
+                  }, 500);
+              }
+          }
+          EOF
+
+      - name: 创建activity_main.xml
+        run: |
+          mkdir -p app/src/main/res/layout
+          cat > app/src/main/res/layout/activity_main.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:app="http://schemas.android.com/apk/res-auto"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              tools:context=".MainActivity">
+
+              <TextView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:text="正在退出应用..."
+                  android:textSize="24sp"
+                  app:layout_constraintBottom_toBottomOf="parent"
+                  app:layout_constraintLeft_toLeftOf="parent"
+                  app:layout_constraintRight_toRightOf="parent"
+                  app:layout_constraintTop_toTopOf="parent" />
+
+          </androidx.constraintlayout.widget.ConstraintLayout>
+          EOF
 
       - name: 构建Debug APK
         run: ./gradlew assembleDebug
