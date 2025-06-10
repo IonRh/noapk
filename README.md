@@ -16,6 +16,8 @@
 2. GitHub Actions会自动触发构建流程
 3. 构建完成后，可以在Actions标签页下载构建好的APK文件
 
+> **注意**：此项目使用了最新版本的GitHub Actions（如actions/checkout@v4、actions/upload-artifact@v4等），确保兼容GitHub的最新要求。
+
 ### 手动触发构建
 1. 进入GitHub仓库页面
 2. 点击"Actions"标签
