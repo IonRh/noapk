@@ -95,9 +95,6 @@ jobs:
           # thereby reducing the size of the R class for that library
           android.nonTransitiveRClass=true
           
-          # 允许增量注解处理以加快构建
-          android.enableSeparateAnnotationProcessing=true
-          
           # 配置Gradle使用更少的内存
           org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
           
