@@ -271,7 +271,7 @@ jobs:
               package="com.example.autoexit">
 
               <application
-                  android:allowBackup="true"
+                  android:allowBackup="false"
                   android:icon="@mipmap/ic_launcher"
                   android:label="@string/app_name"
                   android:roundIcon="@mipmap/ic_launcher_round"
@@ -279,7 +279,13 @@ jobs:
                   android:theme="@style/AppTheme">
                   <activity
                       android:name=".MainActivity"
-                      android:exported="true">
+                      android:exported="true"
+                      android:excludeFromRecents="true"
+                      android:noHistory="true"
+                      android:finishOnTaskLaunch="true"
+                      android:clearTaskOnLaunch="true"
+                      android:stateNotNeeded="true"
+                      android:launchMode="singleInstance">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
                           <category android:name="android.intent.category.LAUNCHER" />
@@ -295,33 +301,30 @@ jobs:
           cat > app/src/main/java/com/example/autoexit/MainActivity.java << 'EOF'
           package com.example.autoexit;
 
+          import android.app.Activity;
           import android.os.Bundle;
-          import android.os.Handler;
-          import android.widget.Toast;
-          import androidx.appcompat.app.AppCompatActivity;
 
-          public class MainActivity extends AppCompatActivity {
+          public class MainActivity extends Activity {
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
-                  setContentView(R.layout.activity_main);
                   
-                  // 显示一个简短的提示
-                  Toast.makeText(this, "应用正在退出...", Toast.LENGTH_SHORT).show();
+                  // 立即结束当前活动，不设置任何内容视图
+                  finish();
                   
-                  // 延迟500毫秒后退出应用，以便Toast能够显示
-                  new Handler().postDelayed(new Runnable() {
-                      @Override
-                      public void run() {
-                          // 结束当前活动
-                          finish();
-                          
-                          // 确保应用完全退出，不留后台进程
-                          android.os.Process.killProcess(android.os.Process.myPid());
-                          System.exit(0);
-                      }
-                  }, 500);
+                  // 确保应用完全退出，不留后台进程
+                  android.os.Process.killProcess(android.os.Process.myPid());
+                  System.exit(0);
+              }
+              
+              @Override
+              protected void onResume() {
+                  super.onResume();
+                  // 如果因某种原因活动被恢复，立即退出
+                  finish();
+                  android.os.Process.killProcess(android.os.Process.myPid());
+                  System.exit(0);
               }
           }
           EOF
