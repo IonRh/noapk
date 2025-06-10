@@ -305,7 +305,10 @@ jobs:
           EOF
 
       - name: 创建Java源文件目录
-        run: mkdir -p app/src/main/java/com/mostuseless/program
+        run: |
+          # 清理可能存在的旧Java文件
+          rm -rf app/src/main/java
+          mkdir -p app/src/main/java/com/mostuseless/program
 
       - name: 创建AndroidManifest.xml
         run: |
