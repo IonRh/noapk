@@ -23,9 +23,6 @@ jobs:
           java-version: '11'
           cache: gradle
 
-      - name: 设置Gradle权限
-        run: chmod +x gradlew
-
       - name: 创建Gradle Wrapper
         run: |
           mkdir -p gradle/wrapper
@@ -39,6 +36,12 @@ jobs:
         run: |
           mkdir -p gradle/wrapper
           curl -o gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle/raw/v7.6.0/gradle/wrapper/gradle-wrapper.jar
+
+      - name: 创建Gradlew脚本
+        run: |
+          echo '#!/usr/bin/env sh' > gradlew
+          echo 'exec gradle "$@"' >> gradlew
+          chmod +x gradlew
 
       - name: 创建本地属性文件
         run: touch local.properties
@@ -80,12 +83,6 @@ jobs:
           mkdir -p app/src/main/res/mipmap-xhdpi
           mkdir -p app/src/main/res/mipmap-xxhdpi
           mkdir -p app/src/main/res/mipmap-xxxhdpi
-
-      - name: 创建Gradlew脚本
-        run: |
-          echo '#!/usr/bin/env sh' > gradlew
-          echo 'exec gradle "$@"' >> gradlew
-          chmod +x gradlew
 
       - name: 构建Debug APK
         run: ./gradlew assembleDebug
